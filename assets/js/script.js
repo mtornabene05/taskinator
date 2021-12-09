@@ -44,25 +44,34 @@ var taskFormHandler = function (event) {
 };
 
 var createTaskEl = function(taskDataObj) {
-    //create list item
     var listItemEl = document.createElement("li");
     listItemEl.className = "task-item";
-
-    //add task id as a custom attribute
     listItemEl.setAttribute("data-task-id", taskIdCounter);
 
-    //create div to hold task info and add to list item
     var taskInfoEl = document.createElement("div");
     taskInfoEl.className = "task-info";
-    //add HTML content to div
     taskInfoEl.innerHTML = "<h3 class='task-name'>" + taskDataObj.name + "</h3><span class='task-type'>" + taskDataObj.type + "</span>";
     listItemEl.appendChild(taskInfoEl);
 
     var taskActionsEl = createTaskActions(taskIdCounter);
     listItemEl.appendChild(taskActionsEl);
 
-    //add entire list item to list
-    tasksToDoEl.appendChild(listItemEl);
+    switch (taskDataObj.status) {
+        case "to do":
+            taskActionsEl.querySelector("select[name='status-change']").selectedIndex = 0;
+            tasksToDoEl.append(listItemEl);
+            break;
+        case "in progress":
+            taskActionsEl.querySelector("select[name='status-change']").selectedIndex = 1;
+            tasksInProgressEl.append(listItemEl);
+            break;
+        case "completed":
+            taskActionsEl.querySelector("select[name='status-change']").selectedIndex = 2;
+            tasksCompletedEl.append(listItemEl);
+            break;
+        default:
+            console.log("Something went wrong!");
+    }
 
     taskDataObj.id = taskIdCounter;
     tasks.push(taskDataObj);
@@ -83,27 +92,22 @@ var createTaskActions = function(taskId) {
     editButtonEl.textContent = "Edit";
     editButtonEl.className = "btn edit-btn";
     editButtonEl.setAttribute("data-task-id", taskId);
-
     actionContainerEl.appendChild(editButtonEl);
-
     //create delete button
     var deleteButtonEl = document.createElement("button");
     deleteButtonEl.textContent = "Delete";
     deleteButtonEl.className = "btn delete-btn";
     deleteButtonEl.setAttribute("data-task-id", taskId);
-
     actionContainerEl.appendChild(deleteButtonEl);
-
     //create change status dropdown
     var statusSelectEl = document.createElement("select");
     statusSelectEl.className = "select-status";
     statusSelectEl.setAttribute("name", "status-change");
     statusSelectEl.setAttribute("data-task-id", taskId);
-
     actionContainerEl.appendChild(statusSelectEl);
-
     //create status options
     var statusChoices = ["To Do", "In Progress", "Completed"];
+
         for (var i = 0; i < statusChoices.length; i++) {
             //create option element
             var statusOptionEl = document.createElement("option");
@@ -135,7 +139,7 @@ var completeEditTask = function(taskName, taskType, taskId) {
     alert("Task Updated!");
 
     formEl.removeAttribute("data-task-id");
-    document.querySelector("#save-task").textContent = "Add Task";
+    formEl.querySelector("#save-task").textContent = "Add Task";
 
     //save tasks to localStorage
     saveTasks();
@@ -147,11 +151,13 @@ var taskButtonHandler = function(event) {
 
     //edit button was clicked
     if (targetEl.matches(".edit-btn")) {
+        console.log("edit", targetEl);
         var taskId = targetEl.getAttribute("data-task-id");
         editTask(taskId);
     }
     //delete button was clicked
     else if (targetEl.matches(".delete-btn")) {
+        console.log("delete", targetEl);
         //get the element's task id
         var taskId = targetEl.getAttribute("data-task-id");
         deleteTask(taskId);
@@ -164,11 +170,11 @@ var taskStatusChangeHandler = function(event) {
     //get the task item's id
     var taskId = event.target.getAttribute("data-task-id");
 
-    //get the currently selected option's value and convert to lowercase
-    var statusValue = event.target.value.toLowerCase();
-
     //find the parent task item element based on the id
     var taskSelected = document.querySelector(".task-item[data-task-id='" + taskId + "']");
+
+    //get the currently selected option's value and convert to lowercase
+    var statusValue = event.target.value.toLowerCase();
 
     if (statusValue === "to do") {
         tasksToDoEl.appendChild(taskSelected);
@@ -199,11 +205,13 @@ var editTask = function(taskId) {
 
     //get content from task name and type
     var taskName = taskSelected.querySelector("h3.task-name").textContent;
+    console.log(taskName);
     var taskType = taskSelected.querySelector("span.task-type").textContent;
+    console.log(taskType);
     document.querySelector("input[name='task-name']").value = taskName;
     document.querySelector("select[name='task-type']").value = taskType;
-    document.querySelector("#save-task").textContent = "Save Task";
     formEl.setAttribute("data-task-id", taskId);
+    formEl.querySelector("#save-task").textContent = "Save Task";
 };
 
 var deleteTask = function(taskId) {
@@ -242,13 +250,14 @@ var loadTasks = function () {
 
     console.log("Saved tasks found!");
 
-    savedtasks = JSON.parse(savedTasks);
+    savedTasks = JSON.parse(savedTasks);
 
     for (var i = 0; i < savedTasks.length; i++) {
-        createTaskEl(savedTasks[i])
+        createTaskEl(savedTasks[i]);
     }
-}
+};
 
 formEl.addEventListener("submit", taskFormHandler);
 pageContentEl.addEventListener("click", taskButtonHandler);
 pageContentEl.addEventListener("change", taskStatusChangeHandler);
+loadTasks();
